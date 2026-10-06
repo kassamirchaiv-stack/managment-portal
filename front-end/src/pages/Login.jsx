@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowDown, ArrowLeft, ArrowRight, Menu, X } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 import schoolLogo from '../assets/Alene.jpg';
 import './Login.css';
@@ -10,6 +10,13 @@ import './Login.css';
 const SCHOOL_SITE_URL =
   import.meta.env.VITE_SCHOOL_SITE_URL || 'https://alene-highschool-website.vercel.app';
 
+const ROLE_ROUTES = {
+  ADMIN_PRINCIPAL: '/admin',
+  TEACHER: '/teacher',
+  PARENT: '/parent',
+  STUDENT: '/student',
+};
+
 const ROLE_OPTIONS = [
   { value: 'STUDENT', label: 'Student' },
   { value: 'PARENT', label: 'Parent' },
@@ -18,7 +25,6 @@ const ROLE_OPTIONS = [
 ];
 
 const Login = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState('STUDENT');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -26,17 +32,11 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login, logout, loading: authLoading } = useAuth();
+  const { login, logout, loading: authLoading, isAuthenticated, role } = useAuth();
   const navigate = useNavigate();
 
   const redirectByRole = (userRole) => {
-    const routes = {
-      ADMIN_PRINCIPAL: '/admin',
-      TEACHER: '/teacher',
-      PARENT: '/parent',
-      STUDENT: '/student',
-    };
-    navigate(routes[userRole] || '/');
+    navigate(ROLE_ROUTES[userRole] || '/');
   };
 
   const handleSubmit = async (event) => {
@@ -64,136 +64,19 @@ const Login = () => {
     setIsSubmitting(false);
   };
 
+  // Already signed in (e.g. reopening /login): go straight to the dashboard.
+  // Skipped mid-submit so a wrong-role sign-in can still be logged out.
+  if (isAuthenticated && !isSubmitting && ROLE_ROUTES[role]) {
+    return <Navigate to={ROLE_ROUTES[role]} replace />;
+  }
+
   const identifierLabel = selectedRole === 'STUDENT' ? 'Student ID Number' : 'Username';
   const identifierPlaceholder =
     selectedRole === 'STUDENT' ? 'Enter your student ID' : 'Enter your username';
 
   return (
     <div className="school-home">
-      <header className="school-site-header">
-        <a className="school-site-brand" href="#home" aria-label="Alene High School home">
-          <img src={schoolLogo} alt="" />
-          <span>Alene High School</span>
-        </a>
-        <button
-          className="school-menu-toggle"
-          type="button"
-          aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-          aria-expanded={isMenuOpen}
-          onClick={() => setIsMenuOpen((open) => !open)}
-        >
-          {isMenuOpen ? <X size={23} /> : <Menu size={23} />}
-        </button>
-        <nav className={`school-site-nav${isMenuOpen ? ' is-open' : ''}`} aria-label="Main navigation">
-          <a href="#stem" onClick={() => setIsMenuOpen(false)}>STEM at Alene</a>
-          <a href="#community" onClick={() => setIsMenuOpen(false)}>Community</a>
-          <a href="#achievements" onClick={() => setIsMenuOpen(false)}>Achievements</a>
-          <a className="school-nav-login" href="#portal-login" onClick={() => setIsMenuOpen(false)}>
-            Portal sign in <ArrowRight size={15} />
-          </a>
-        </nav>
-      </header>
-
-      <main id="home">
-        <section className="school-hero" aria-labelledby="home-title">
-          <div className="school-hero__copy">
-            <div className="school-eyebrow">
-              <span className="school-hero__number">01</span>
-              <span className="school-eyebrow__rule" />
-              <span>Alene High School</span>
-            </div>
-            <h1 id="home-title">Excellence<br />in science</h1>
-            <p className="school-hero__tagline">Through collective effort.</p>
-            <p className="school-hero__description">
-              A place to ask bigger questions, learn by doing, and grow together.
-              Welcome to the Alene High School community.
-            </p>
-            <div className="school-hero__actions">
-              <a className="school-button school-button--blue" href="#stem">
-                Discover Alene <ArrowRight size={16} />
-              </a>
-              <a className="school-text-link" href="#portal-login">
-                Go to the school portal <ArrowDown size={14} />
-              </a>
-            </div>
-          </div>
-          <span className="school-hero__side-note" aria-hidden="true">Learn · Explore · Together</span>
-          <span className="school-hero__established">Learning · Growing · Together</span>
-        </section>
-
-        <section className="school-stem" id="stem" aria-labelledby="stem-title">
-          <div className="school-stem__heading">
-            <div className="school-eyebrow school-eyebrow--blue">
-              <span>02</span><span className="school-eyebrow__rule" /><span>Curiosity in action</span>
-            </div>
-            <h2 id="stem-title">STEM at<br /><span>Alene.</span></h2>
-            <p>Ideas become discoveries when students have the space, tools, and support to explore.</p>
-          </div>
-          <figure className="school-stem__photo">
-            <img
-              src="https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1500&q=85"
-              alt="Science laboratory glassware arranged for a practical experiment"
-              loading="lazy"
-            />
-            <figcaption>Learning through experimentation</figcaption>
-          </figure>
-        </section>
-
-        <section className="school-blue-band" aria-label="Our approach">
-          <div className="school-blue-band__inner">
-            <div>
-              <p>Good questions lead somewhere.</p>
-              <h2>Here, curiosity has room to grow.</h2>
-            </div>
-            <a href="#community" aria-label="Explore the Alene community">
-              <ArrowRight size={21} />
-            </a>
-          </div>
-        </section>
-
-        <section className="school-community" id="community" aria-labelledby="community-title">
-          <div className="school-community__mark" aria-hidden="true">03</div>
-          <div className="school-community__copy">
-            <div className="school-eyebrow">
-              <span className="school-eyebrow__rule" /><span>Better, together</span>
-            </div>
-            <h2 id="community-title">A community<br />that shows up.</h2>
-            <p>Students, families, and educators each bring something essential to the work of learning.</p>
-            <a className="school-text-link" href="#portal-login">
-              Meet your school community <ArrowRight size={15} />
-            </a>
-          </div>
-          <div className="school-community__accent" aria-hidden="true" />
-        </section>
-
-        <section className="school-achievements" id="achievements" aria-labelledby="achievements-title">
-          <div className="school-achievements__heading">
-            <div className="school-eyebrow">
-              <span>04</span><span className="school-eyebrow__rule" /><span>What we value</span>
-            </div>
-            <h2 id="achievements-title">Room to do<br />great things.</h2>
-          </div>
-          <div className="school-achievement-grid">
-            <article>
-              <span>01</span>
-              <h3>Curious minds</h3>
-              <p>Encouraging students to ask, test, and discover.</p>
-            </article>
-            <article>
-              <span>02</span>
-              <h3>Shared effort</h3>
-              <p>Building a stronger school through collaboration.</p>
-            </article>
-            <article>
-              <span>03</span>
-              <h3>Every student</h3>
-              <p>Making space for each learner to find their path.</p>
-            </article>
-          </div>
-        </section>
-      </main>
-
-      <section className="school-portal" id="portal-login" aria-labelledby="portal-title">
+      <main className="school-portal" aria-labelledby="portal-title">
         <div className="school-portal__intro">
           <a className="school-portal__back" href={SCHOOL_SITE_URL}>
             <ArrowLeft size={16} /> Back to Alene High School
@@ -288,16 +171,7 @@ const Login = () => {
             </button>
           </form>
         </div>
-      </section>
-
-      <footer className="school-site-footer">
-        <a className="school-site-brand" href="#home" aria-label="Back to top">
-          <img src={schoolLogo} alt="" />
-          <span>Alene High School</span>
-        </a>
-        <span>Learning together, every day.</span>
-        <a href="#home">Back to top ↑</a>
-      </footer>
+      </main>
     </div>
   );
 };
