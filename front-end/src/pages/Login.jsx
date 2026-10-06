@@ -64,13 +64,6 @@ const Login = () => {
     setIsSubmitting(false);
   };
 
-  const setDemoCredentials = (demoUsername, role) => {
-    setIdentifier(demoUsername);
-    setPassword('password123');
-    setSelectedRole(role);
-    setError('');
-  };
-
   const identifierLabel = selectedRole === 'STUDENT' ? 'Student ID Number' : 'Username';
   const identifierPlaceholder =
     selectedRole === 'STUDENT' ? 'Enter your student ID' : 'Enter your username';
@@ -262,7 +255,6 @@ const Login = () => {
               onChange={(event) => setIdentifier(event.target.value)}
               placeholder={identifierPlaceholder}
             />
-            {selectedRole === 'STUDENT' && <span className="school-form-hint">Demo ID: student1</span>}
 
             <label className="school-form-label" htmlFor="portal-password">Password</label>
             <div className="school-password-wrap">
@@ -295,17 +287,6 @@ const Login = () => {
               {!authLoading && !isSubmitting && <ArrowRight size={17} />}
             </button>
           </form>
-
-          <details className="school-demo-details">
-            <summary>Use a demo account</summary>
-            <p>Demo accounts are for testing only. Password: <strong>password123</strong></p>
-            <div className="school-demo-buttons">
-              <button type="button" onClick={() => setDemoCredentials('student1', 'STUDENT')}>Student</button>
-              <button type="button" onClick={() => setDemoCredentials('parent1', 'PARENT')}>Parent</button>
-              <button type="button" onClick={() => setDemoCredentials('teacher1', 'TEACHER')}>Teacher</button>
-              <button type="button" onClick={() => setDemoCredentials('principal1', 'ADMIN_PRINCIPAL')}>Principal</button>
-            </div>
-          </details>
         </div>
       </section>
 

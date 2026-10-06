@@ -19,8 +19,8 @@ const RootRedirect = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
-        <p className="text-slate-400">Loading portal...</p>
+      <div className="min-h-screen bg-school-canvas flex items-center justify-center">
+        <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-school-red">Loading portal...</p>
       </div>
     );
   }

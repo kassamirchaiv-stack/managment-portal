@@ -29,13 +29,13 @@ const TeacherPopover = ({ teacher, children }) => {
           open ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
         }`}
       >
-        <div className="bg-white rounded-xl border border-slate-200 shadow-xl p-4 space-y-3">
+        <div className="bg-white border border-school-line shadow-xl p-4 space-y-3">
           <div className="flex items-center gap-3">
             <Avatar src={teacher.profile_picture_url} name={teacher.full_name} size="md" />
             <div className="min-w-0">
-              <p className="text-sm font-bold text-slate-900 truncate">{teacher.full_name}</p>
+              <p className="text-sm font-bold text-school-ink truncate">{teacher.full_name}</p>
               {teacher.subject && (
-                <p className="text-xs text-blue-600 flex items-center gap-1 truncate">
+                <p className="text-xs text-school-blue flex items-center gap-1 truncate">
                   <BookOpen size={12} />
                   <span>{teacher.subject}</span>
                 </p>
@@ -50,19 +50,19 @@ const TeacherPopover = ({ teacher, children }) => {
           <div className="space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
             {email && (
               <div className="flex items-center gap-2">
-                <Mail size={13} className="text-blue-600 flex-shrink-0" />
+                <Mail size={13} className="text-school-blue flex-shrink-0" />
                 <span className="truncate">{email}</span>
               </div>
             )}
             {teacher.phone && (
               <div className="flex items-center gap-2">
-                <Phone size={13} className="text-blue-600 flex-shrink-0" />
+                <Phone size={13} className="text-school-blue flex-shrink-0" />
                 <span>{teacher.phone}</span>
               </div>
             )}
             {teacher.office_hours && (
               <div className="flex items-center gap-2">
-                <Clock size={13} className="text-blue-600 flex-shrink-0" />
+                <Clock size={13} className="text-school-blue flex-shrink-0" />
                 <span>{teacher.office_hours}</span>
               </div>
             )}
@@ -72,7 +72,7 @@ const TeacherPopover = ({ teacher, children }) => {
             <a
               href={`mailto:${email}`}
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-lg transition-all cursor-pointer"
+              className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-school-blue hover:bg-school-blue-dark text-white text-[11px] font-extrabold uppercase tracking-[0.12em] transition-all hover:-translate-y-0.5 cursor-pointer"
             >
               <Mail size={13} />
               <span>Send Message</span>

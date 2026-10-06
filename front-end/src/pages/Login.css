@@ -85,10 +85,6 @@
 .school-button:focus-visible,
 .school-portal__back:focus-visible,
 .school-password-toggle:focus-visible,
-.school-demo-buttons button:focus-visible {
-  outline: 3px solid #e5b54d;
-  outline-offset: 4px;
-}
 
 .school-button:disabled {
   opacity: 0.65;
@@ -329,45 +325,11 @@
   margin-top: 9px;
 }
 
-.school-demo-details {
-  margin-top: 22px;
-  padding-top: 17px;
-  border-top: 1px solid var(--school-line);
-}
 
-.school-demo-details summary {
-  color: var(--school-blue);
-  font-size: 12px;
-  font-weight: 750;
-  cursor: pointer;
-}
 
-.school-demo-details > p {
-  margin: 12px 0 9px;
-  color: var(--school-muted);
-  font-size: 11px;
-}
 
-.school-demo-buttons {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-}
 
-.school-demo-buttons button {
-  padding: 9px 4px;
-  border: 1px solid var(--school-line);
-  background: #fff;
-  color: var(--school-ink);
-  font-size: 10px;
-  font-weight: 700;
-  cursor: pointer;
-}
 
-.school-demo-buttons button:hover {
-  border-color: var(--school-blue);
-  color: var(--school-blue);
-}
 
 @media (max-width: 900px) {
   .school-portal {
@@ -419,10 +381,6 @@
     justify-content: flex-start;
     padding-left: 10px;
     font-size: 12px;
-  }
-
-  .school-demo-buttons {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

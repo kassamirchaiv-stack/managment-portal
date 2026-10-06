@@ -10,11 +10,11 @@ const SIZE_CLASSES = {
 
 // Small fixed palette so initials avatars still feel varied without any backend data.
 const PALETTE = [
-  'bg-blue-600',
-  'bg-indigo-600',
-  'bg-sky-600',
-  'bg-cyan-600',
-  'bg-violet-600',
+  'bg-school-blue',
+  'bg-school-red',
+  'bg-school-blue-dark',
+  'bg-school-red-dark',
+  'bg-school-ink',
 ];
 
 const getInitials = (name) => {
@@ -43,7 +43,7 @@ const Avatar = ({ src, name, size = 'md', className = '' }) => {
       <img
         src={src}
         alt={name || 'Profile picture'}
-        className={`${sizeClass} rounded-full object-cover border border-slate-200 flex-shrink-0 ${className}`}
+        className={`${sizeClass} rounded-full object-cover border border-school-line flex-shrink-0 ${className}`}
       />
     );
   }

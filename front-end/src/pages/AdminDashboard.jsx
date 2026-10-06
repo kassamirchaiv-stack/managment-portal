@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/auth-context';
 import api from '../api/api';
-import Navbar from '../components/Navbar';
+import PortalLayout from '../components/PortalLayout';
 import Avatar from '../components/Avatar';
 import {
   CheckCircle2,
@@ -142,93 +142,90 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 md:p-8">
-      <div className="max-w-5xl mx-auto space-y-6">
-
-        {/* TOP BAR */}
-        <Navbar
-          title="Principal Administrative Portal"
-          subtitle={`Signed in as ${user?.full_name || ''} (Principal)`}
-          user={user}
-          onLogout={logout}
-          rightExtra={
-            <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-white">
-                <Bell size={18} />
-              </div>
-              {notificationCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-blue-600">
-                  {notificationCount}
-                </span>
-              )}
-            </div>
-          }
-        />
+    <PortalLayout
+      eyebrow="Principal portal"
+      title="Approvals & reviews"
+      subtitle={`Signed in as ${user?.full_name || ''} (Principal)`}
+      user={user}
+      onLogout={logout}
+      rightExtra={
+        <div className="relative">
+          <div className="w-10 h-10 border border-white/65 flex items-center justify-center text-white">
+            <Bell size={18} />
+          </div>
+          {notificationCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-white text-school-red text-[10px] font-extrabold flex items-center justify-center border-2 border-school-red">
+              {notificationCount}
+            </span>
+          )}
+        </div>
+      }
+    >
 
         {/* REAL-TIME SUCCESS TOAST FEEDBACK */}
         {toastMessage && (
-          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium flex items-center space-x-3 shadow-sm animate-fade-in">
+          <div className="p-4 bg-emerald-50 border border-emerald-200 border-l-[3px] border-l-emerald-600 text-emerald-700 text-sm font-medium flex items-center space-x-3 shadow-sm animate-fade-in">
             <CheckCircle2 size={20} className="text-emerald-600 flex-shrink-0" />
             <span>{toastMessage}</span>
           </div>
         )}
 
         {queueLoadError && (
-          <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+          <div role="alert" className="border border-school-red/20 border-l-[3px] border-l-school-red bg-school-red-soft p-4 text-sm text-school-red-dark">
             {queueLoadError}
           </div>
         )}
 
         {/* STUDENT PROFILE CHANGE REQUESTS (NOTIFICATIONS) CARD */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div className="bg-white border border-school-line border-t-[3px] border-t-school-red p-6 shadow-card space-y-6">
+          <div className="flex items-center justify-between border-b border-school-line pb-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-                <UserCog className="text-blue-600" size={20} />
+              <h2 className="text-xl font-extrabold tracking-[-0.04em] text-school-ink flex items-center space-x-2">
+                <UserCog className="text-school-blue" size={20} />
                 <span>Student Profile Change Requests</span>
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-school-muted mt-0.5">
                 Students requesting edits to their name or email on file
               </p>
             </div>
 
-            <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold rounded-full">
+            <span className="px-3 py-1 bg-school-blue-soft text-school-blue border border-school-blue/25 text-[11px] font-extrabold uppercase tracking-[0.08em]">
               {bioRequests.length} Pending
             </span>
           </div>
 
           {loadingBioRequests ? (
-            <div className="py-10 text-center text-slate-500 flex flex-col items-center space-y-3">
-              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="py-10 text-center text-school-muted flex flex-col items-center space-y-3">
+              <div className="w-8 h-8 border-2 border-school-blue border-t-transparent rounded-full animate-spin"></div>
               <p className="text-sm">Loading profile change requests...</p>
             </div>
           ) : bioRequests.length === 0 ? (
-            <div className="py-10 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+            <div className="py-10 text-center text-school-muted bg-school-soft border border-school-line space-y-2">
               <CheckCircle2 size={30} className="mx-auto text-emerald-500 opacity-70" />
-              <p className="text-xs text-slate-500">No pending student profile change requests.</p>
+              <p className="text-xs text-school-muted">No pending student profile change requests.</p>
             </div>
           ) : (
             <div className="space-y-4">
               {bioRequests.map((req) => (
                 <div
                   key={req.student_id}
-                  className="p-5 bg-white rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-5"
+                  className="p-5 bg-white border border-school-line hover:border-school-blue hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-5"
                 >
                   <div className="space-y-2 flex-1">
                     <div className="flex items-center gap-2.5">
                       <Avatar name={req.current_full_name} size="sm" />
-                      <h3 className="text-base font-bold text-slate-900">{req.current_full_name}</h3>
+                      <h3 className="text-base font-bold text-school-ink">{req.current_full_name}</h3>
                     </div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-school-muted">
                       Grade: <span className="text-slate-700">{req.grade_level}</span>
                     </p>
 
-                    <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs text-slate-700 leading-relaxed space-y-1">
+                    <div className="bg-school-soft p-3.5 border border-school-line text-xs text-slate-700 leading-relaxed space-y-1">
                       <div>
                         <span className="text-slate-400">Name: </span>
                         <span className="line-through text-slate-400">{req.current_full_name}</span>
                         {' → '}
-                        <span className="text-blue-700 font-semibold">
+                        <span className="text-school-blue font-semibold">
                           {req.requested_changes?.full_name || '(unchanged)'}
                         </span>
                       </div>
@@ -236,7 +233,7 @@ const AdminDashboard = () => {
                         <span className="text-slate-400">Email: </span>
                         <span className="line-through text-slate-400">{req.current_email}</span>
                         {' → '}
-                        <span className="text-blue-700 font-semibold">
+                        <span className="text-school-blue font-semibold">
                           {req.requested_changes?.email || '(unchanged)'}
                         </span>
                       </div>
@@ -247,7 +244,7 @@ const AdminDashboard = () => {
                     <button
                       onClick={() => handleBioRequestAction(req.student_id, req.current_full_name, 'approve')}
                       disabled={bioActionId === req.student_id}
-                      className="w-full md:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
+                      className="w-full md:w-auto px-4 py-2.5 bg-school-blue hover:bg-school-blue-dark text-white text-[11px] font-extrabold uppercase tracking-[0.12em] transition-all hover:-translate-y-0.5 flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
                     >
                       <Check size={14} />
                       <span>Approve</span>
@@ -255,7 +252,7 @@ const AdminDashboard = () => {
                     <button
                       onClick={() => handleBioRequestAction(req.student_id, req.current_full_name, 'reject')}
                       disabled={bioActionId === req.student_id}
-                      className="w-full md:w-auto px-4 py-2.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
+                      className="w-full md:w-auto px-4 py-2.5 bg-white hover:border-school-red hover:text-school-red text-school-ink text-[11px] font-extrabold uppercase tracking-[0.12em] border border-school-line transition-colors flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
                     >
                       <X size={14} />
                       <span>Reject</span>
@@ -267,45 +264,45 @@ const AdminDashboard = () => {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div className="bg-white border border-school-line border-t-[3px] border-t-school-red p-6 shadow-card space-y-6">
+          <div className="flex items-center justify-between border-b border-school-line pb-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Pending Report Cards</h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <h2 className="text-xl font-extrabold tracking-[-0.04em] text-school-ink">Pending Report Cards</h2>
+              <p className="text-xs text-school-muted mt-0.5">
                 Review teacher-submitted grades before they appear in student and parent portals
               </p>
             </div>
-            <span className="px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold rounded-full">
+            <span className="px-3 py-1 bg-school-blue-soft text-school-blue border border-school-blue/25 text-[11px] font-extrabold uppercase tracking-[0.08em]">
               {reportCards.length} Pending
             </span>
           </div>
           {loadingReportCards ? (
-            <p className="py-8 text-center text-sm text-slate-500">Loading report cards...</p>
+            <p className="py-8 text-center text-sm text-school-muted">Loading report cards...</p>
           ) : reportCards.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-500">No report cards awaiting review.</p>
+            <p className="py-8 text-center text-sm text-school-muted">No report cards awaiting review.</p>
           ) : (
             <div className="space-y-3">
               {reportCards.map((card) => (
-                <div key={card.id} className="flex flex-col gap-3 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div key={card.id} className="flex flex-col gap-3 border border-school-line p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="font-semibold text-slate-900">{card.student_name} · {card.grade_level}</p>
+                    <p className="font-semibold text-school-ink">{card.student_name} · {card.grade_level}</p>
                     <p className="text-sm text-slate-600">{card.term} · {card.subject} · Grade {card.grade}</p>
                     {card.teacher_comments && (
-                      <p className="mt-1 text-sm text-slate-500">{card.teacher_comments}</p>
+                      <p className="mt-1 text-sm text-school-muted">{card.teacher_comments}</p>
                     )}
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleReportCardAction(card.id, 'approve')}
                       disabled={reportCardActionId === card.id}
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                      className="bg-school-blue px-4 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white hover:bg-school-blue-dark transition-all hover:-translate-y-0.5 disabled:opacity-50"
                     >
                       Approve
                     </button>
                     <button
                       onClick={() => handleReportCardAction(card.id, 'reject')}
                       disabled={reportCardActionId === card.id}
-                      className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      className="border border-school-line px-4 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-school-ink hover:border-school-red hover:text-school-red transition-colors disabled:opacity-50"
                     >
                       Return for revision
                     </button>
@@ -317,34 +314,34 @@ const AdminDashboard = () => {
         </div>
 
         {/* PRINCIPAL APPROVAL QUEUE CARD */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div className="bg-white border border-school-line border-t-[3px] border-t-school-red p-6 shadow-card space-y-6">
+          <div className="flex items-center justify-between border-b border-school-line pb-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
+              <h2 className="text-xl font-extrabold tracking-[-0.04em] text-school-ink flex items-center space-x-2">
                 <Clock className="text-amber-500" size={20} />
                 <span>Pending Discipline Review Queue</span>
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-school-muted mt-0.5">
                 Review incident drafts submitted by teachers before publishing to parents
               </p>
             </div>
 
-            <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold rounded-full">
+            <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-extrabold uppercase tracking-[0.08em]">
               {queue.length} Pending
             </span>
           </div>
 
           {/* QUEUE CONTENT */}
           {loading ? (
-            <div className="py-12 text-center text-slate-500 flex flex-col items-center space-y-3">
+            <div className="py-12 text-center text-school-muted flex flex-col items-center space-y-3">
               <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
               <p className="text-sm">Loading pending queue items...</p>
             </div>
           ) : queue.length === 0 ? (
-            <div className="py-16 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+            <div className="py-16 text-center text-school-muted bg-school-soft border border-school-line space-y-2">
               <CheckCircle2 size={36} className="mx-auto text-emerald-500 opacity-70" />
               <h3 className="text-base font-semibold text-slate-700">Approval Queue is Clear</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <p className="text-xs text-school-muted max-w-sm mx-auto">
                 All teacher-submitted discipline logs have been reviewed and published.
               </p>
             </div>
@@ -353,15 +350,15 @@ const AdminDashboard = () => {
               {queue.map((item) => (
                 <div
                   key={item.id}
-                  className="p-5 bg-white rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-5"
+                  className="p-5 bg-white border border-school-line hover:border-school-blue hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-5"
                 >
                   {/* Left Column: Log Information */}
                   <div className="space-y-3 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold rounded-md">
+                      <span className="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold">
                         {item.category}
                       </span>
-                      <span className="text-xs text-slate-500 flex items-center space-x-1">
+                      <span className="text-xs text-school-muted flex items-center space-x-1">
                         <Calendar size={13} className="text-slate-400" />
                         <span>Incident Date: {item.incident_date}</span>
                       </span>
@@ -370,21 +367,21 @@ const AdminDashboard = () => {
                     <div className="flex items-center gap-2.5">
                       <Avatar name={item.student_name} size="sm" />
                       <div>
-                        <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <h3 className="text-base font-bold text-school-ink flex items-center space-x-2">
                           <span>{item.student_name}</span>
-                          <span className="text-xs text-blue-700 font-normal px-2 py-0.5 bg-blue-50 border border-blue-200 rounded">
+                          <span className="text-xs text-school-blue font-normal px-2 py-0.5 bg-school-blue-soft border border-school-blue/25">
                             {item.grade_level}
                           </span>
                         </h3>
-                        <p className="text-xs text-slate-500 mt-0.5">
+                        <p className="text-xs text-school-muted mt-0.5">
                           Logged by <span className="text-slate-700 font-medium">{item.teacher_name}</span>
                         </p>
                       </div>
                     </div>
 
                     {/* Teacher Notes / Description */}
-                    <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs text-slate-700 leading-relaxed">
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block mb-1">
+                    <div className="bg-school-soft p-3.5 border border-school-line text-xs text-slate-700 leading-relaxed">
+                      <span className="text-[10px] uppercase font-extrabold tracking-[0.14em] text-slate-400 block mb-1">
                         Teacher Notes:
                       </span>
                       "{item.description}"
@@ -396,7 +393,7 @@ const AdminDashboard = () => {
                     <button
                       onClick={() => handleApproveAndPublish(item.id, item.student_name)}
                       disabled={approvingId === item.id}
-                      className="w-full md:w-auto px-5 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+                      className="w-full md:w-auto px-5 py-3 bg-school-blue hover:bg-school-blue-dark text-white text-[11px] font-extrabold uppercase tracking-[0.12em] transition-all hover:-translate-y-0.5 flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
                     >
                       {approvingId === item.id ? (
                         <span>Publishing...</span>
@@ -413,9 +410,7 @@ const AdminDashboard = () => {
             </div>
           )}
         </div>
-
-      </div>
-    </div>
+    </PortalLayout>
   );
 };
 

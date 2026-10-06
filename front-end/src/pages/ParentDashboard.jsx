@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/auth-context';
 import api from '../api/api';
 import CourseLoad from '../components/CourseLoad';
-import Navbar from '../components/Navbar';
+import PortalLayout from '../components/PortalLayout';
 import {
   GraduationCap,
   BookOpen,
@@ -102,8 +102,8 @@ const ParentDashboard = () => {
       };
     } else {
       return {
-        bg: 'bg-rose-50 border-rose-200 text-rose-700',
-        icon: <AlertTriangle size={16} className="text-rose-600" />,
+        bg: 'bg-school-red-soft border-school-red/25 text-school-red-dark',
+        icon: <AlertTriangle size={16} className="text-school-red" />,
         type: 'Incident',
       };
     }
@@ -114,9 +114,9 @@ const ParentDashboard = () => {
    */
   const getGradeBadgeStyle = (grade) => {
     if (grade.startsWith('A')) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    if (grade.startsWith('B')) return 'bg-sky-50 text-sky-700 border-sky-200';
+    if (grade.startsWith('B')) return 'bg-school-blue-soft text-school-blue border-school-blue/25';
     if (grade.startsWith('C')) return 'bg-amber-50 text-amber-700 border-amber-200';
-    return 'bg-slate-100 text-slate-600 border-slate-200';
+    return 'bg-school-soft text-slate-600 border-school-line';
   };
 
   // Mock Extracurricular Activities Data for Tab 2
@@ -148,42 +148,39 @@ const ParentDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-
-        {/* TOP BAR & NAVIGATION */}
-        <Navbar
-          title="Parent Portal"
-          subtitle={`Welcome, ${user?.full_name || ''}`}
-          user={user}
-          onLogout={logout}
-        />
+    <PortalLayout
+      eyebrow="Family portal"
+      title="Parent Portal"
+      subtitle={`Welcome, ${user?.full_name || ''}`}
+      user={user}
+      onLogout={logout}
+    >
 
         {/* CHILD HEADER & SELECTOR CARD */}
         {loadingChildren ? (
-          <div className="p-8 bg-white rounded-2xl border border-slate-200 text-center text-slate-500 shadow-sm">
+          <div className="p-8 bg-white border border-school-line text-center text-school-muted shadow-sm">
             Loading child profiles...
           </div>
         ) : children.length === 0 ? (
-          <div className="p-8 bg-white rounded-2xl border border-slate-200 text-center text-slate-500 shadow-sm">
+          <div className="p-8 bg-white border border-school-line text-center text-school-muted shadow-sm">
             No children currently linked to this parent account.
           </div>
         ) : (
-          <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="p-6 bg-white border border-school-line border-t-[3px] border-t-school-red shadow-card flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center space-x-4">
-              <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md font-semibold text-2xl">
+              <div className="w-14 h-14 bg-school-blue text-white flex items-center justify-center shadow-md font-semibold text-2xl">
                 <GraduationCap size={32} />
               </div>
               <div>
                 <div className="flex items-center space-x-3">
-                  <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  <h2 className="text-2xl font-bold text-school-ink tracking-tight">
                     {childDetails?.student?.full_name || currentChild?.full_name}
                   </h2>
-                  <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold rounded-full">
+                  <span className="px-3 py-1 bg-school-blue-soft text-school-blue border border-school-blue/25 text-[11px] font-extrabold uppercase tracking-[0.08em]">
                     {childDetails?.student?.grade_level || currentChild?.grade_level}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-1 flex items-center space-x-2">
+                <p className="text-xs text-school-muted mt-1 flex items-center space-x-2">
                   <span>Student ID: #{selectedChildId}</span>
                   <span>•</span>
                   <span>{childDetails?.student?.email || currentChild?.email}</span>
@@ -194,14 +191,14 @@ const ParentDashboard = () => {
             {/* Child Dropdown Selector (if parent has multiple children) */}
             {children.length > 1 && (
               <div className="relative">
-                <label className="block text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1">
+                <label className="block text-[10px] uppercase tracking-[0.18em] text-school-red font-extrabold mb-1">
                   Select Child
                 </label>
                 <div className="relative">
                   <select
                     value={selectedChildId}
                     onChange={(e) => setSelectedChildId(Number(e.target.value))}
-                    className="appearance-none bg-white border border-slate-300 text-slate-900 text-sm rounded-xl pl-4 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    className="appearance-none bg-white border border-school-input text-school-ink text-sm min-h-12 pl-3.5 pr-10 py-3 focus:outline-none focus:border-school-blue focus:ring-[3px] focus:ring-school-blue/15 cursor-pointer"
                   >
                     {children.map((c) => (
                       <option key={c.student_id} value={c.student_id}>
@@ -217,13 +214,13 @@ const ParentDashboard = () => {
         )}
 
         {/* TAB NAVIGATION BAR */}
-        <div className="flex border-b border-slate-200 space-x-2 sm:space-x-4 overflow-x-auto">
+        <div className="flex border-b border-school-line gap-1 sm:gap-2 overflow-x-auto">
           <button
             onClick={() => setActiveTab('academic')}
-            className={`flex items-center space-x-2 px-5 py-3 text-sm font-medium rounded-t-xl transition-all border-b-2 cursor-pointer whitespace-nowrap ${
+            className={`flex items-center space-x-2 px-5 py-3.5 text-[11px] font-extrabold uppercase tracking-[0.12em] transition-colors border-b-[3px] cursor-pointer whitespace-nowrap ${
               activeTab === 'academic'
-                ? 'bg-white text-blue-600 border-blue-600 shadow-sm'
-                : 'text-slate-500 hover:text-slate-800 border-transparent hover:bg-white/60'
+                ? 'bg-white text-school-red border-school-red'
+                : 'text-school-muted hover:text-school-ink border-transparent hover:bg-white/70'
             }`}
           >
             <BookOpen size={18} />
@@ -232,10 +229,10 @@ const ParentDashboard = () => {
 
           <button
             onClick={() => setActiveTab('activities')}
-            className={`flex items-center space-x-2 px-5 py-3 text-sm font-medium rounded-t-xl transition-all border-b-2 cursor-pointer whitespace-nowrap ${
+            className={`flex items-center space-x-2 px-5 py-3.5 text-[11px] font-extrabold uppercase tracking-[0.12em] transition-colors border-b-[3px] cursor-pointer whitespace-nowrap ${
               activeTab === 'activities'
-                ? 'bg-white text-blue-600 border-blue-600 shadow-sm'
-                : 'text-slate-500 hover:text-slate-800 border-transparent hover:bg-white/60'
+                ? 'bg-white text-school-red border-school-red'
+                : 'text-school-muted hover:text-school-ink border-transparent hover:bg-white/70'
             }`}
           >
             <Award size={18} />
@@ -244,10 +241,10 @@ const ParentDashboard = () => {
 
           <button
             onClick={() => setActiveTab('discipline')}
-            className={`flex items-center space-x-2 px-5 py-3 text-sm font-medium rounded-t-xl transition-all border-b-2 cursor-pointer whitespace-nowrap ${
+            className={`flex items-center space-x-2 px-5 py-3.5 text-[11px] font-extrabold uppercase tracking-[0.12em] transition-colors border-b-[3px] cursor-pointer whitespace-nowrap ${
               activeTab === 'discipline'
-                ? 'bg-white text-blue-600 border-blue-600 shadow-sm'
-                : 'text-slate-500 hover:text-slate-800 border-transparent hover:bg-white/60'
+                ? 'bg-white text-school-red border-school-red'
+                : 'text-school-muted hover:text-school-ink border-transparent hover:bg-white/70'
             }`}
           >
             <ShieldCheck size={18} />
@@ -256,10 +253,10 @@ const ParentDashboard = () => {
 
           <button
             onClick={() => setActiveTab('courses')}
-            className={`flex items-center space-x-2 px-5 py-3 text-sm font-medium rounded-t-xl transition-all border-b-2 cursor-pointer whitespace-nowrap ${
+            className={`flex items-center space-x-2 px-5 py-3.5 text-[11px] font-extrabold uppercase tracking-[0.12em] transition-colors border-b-[3px] cursor-pointer whitespace-nowrap ${
               activeTab === 'courses'
-                ? 'bg-white text-blue-600 border-blue-600 shadow-sm'
-                : 'text-slate-500 hover:text-slate-800 border-transparent hover:bg-white/60'
+                ? 'bg-white text-school-red border-school-red'
+                : 'text-school-muted hover:text-school-ink border-transparent hover:bg-white/70'
             }`}
           >
             <Layers size={18} />
@@ -268,14 +265,14 @@ const ParentDashboard = () => {
         </div>
 
         {/* TAB CONTENT AREA */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 min-h-[350px] shadow-sm">
+        <div className="bg-white border border-school-line border-t-[3px] border-t-school-red p-6 min-h-[350px] shadow-card">
           {activeTab === 'courses' ? (
             selectedChildId && (
               <CourseLoad apiUrl={`/api/parent/child/${selectedChildId}/courses`} />
             )
           ) : loadingDetails ? (
-            <div className="py-12 text-center text-slate-500 flex flex-col items-center justify-center space-y-3">
-              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="py-12 text-center text-school-muted flex flex-col items-center justify-center space-y-3">
+              <div className="w-8 h-8 border-2 border-school-blue border-t-transparent rounded-full animate-spin"></div>
               <p className="text-sm">Fetching student records...</p>
             </div>
           ) : (
@@ -285,19 +282,19 @@ const ParentDashboard = () => {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-bold text-slate-900">Academic Report Cards</h3>
-                      <p className="text-xs text-slate-500">Current term grades and instructor comments</p>
+                      <h3 className="text-xl font-extrabold tracking-[-0.04em] text-school-ink">Academic Report Cards</h3>
+                      <p className="text-xs text-school-muted">Current term grades and instructor comments</p>
                     </div>
                   </div>
 
                   {!childDetails?.report_cards || childDetails.report_cards.length === 0 ? (
-                    <div className="py-12 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="py-12 text-center text-school-muted bg-school-soft border border-school-line">
                       No academic report card records found for this student.
                     </div>
                   ) : (
-                    <div className="overflow-x-auto rounded-xl border border-slate-200">
+                    <div className="overflow-x-auto border border-school-line">
                       <table className="w-full text-left text-sm text-slate-700">
-                        <thead className="bg-slate-50 text-slate-500 uppercase text-[11px] font-semibold tracking-wider border-b border-slate-200">
+                        <thead className="bg-school-soft text-school-muted uppercase text-[10px] font-extrabold tracking-[0.16em] border-b border-school-line">
                           <tr>
                             <th className="px-5 py-3.5">Subject</th>
                             <th className="px-5 py-3.5">Term</th>
@@ -306,13 +303,13 @@ const ParentDashboard = () => {
                             <th className="px-5 py-3.5">Status</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 bg-white">
+                        <tbody className="divide-y divide-school-line bg-white">
                           {childDetails.report_cards.map((rc) => (
-                            <tr key={rc.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="px-5 py-4 font-semibold text-slate-900">{rc.subject}</td>
-                              <td className="px-5 py-4 text-slate-500 text-xs">{rc.term}</td>
+                            <tr key={rc.id} className="hover:bg-school-soft transition-colors">
+                              <td className="px-5 py-4 font-semibold text-school-ink">{rc.subject}</td>
+                              <td className="px-5 py-4 text-school-muted text-xs">{rc.term}</td>
                               <td className="px-5 py-4">
-                                <span className={`inline-block px-3 py-1 rounded-lg text-xs font-bold border ${getGradeBadgeStyle(rc.grade)}`}>
+                                <span className={`inline-block px-3 py-1 text-xs font-bold border ${getGradeBadgeStyle(rc.grade)}`}>
                                   {rc.grade}
                                 </span>
                               </td>
@@ -320,7 +317,7 @@ const ParentDashboard = () => {
                                 {rc.teacher_comments || 'No comments added.'}
                               </td>
                               <td className="px-5 py-4">
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="inline-flex items-center px-2.5 py-1 text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                   {rc.status === 'ADMIN_APPROVED' ? 'Approved' : rc.status}
                                 </span>
                               </td>
@@ -337,32 +334,32 @@ const ParentDashboard = () => {
               {activeTab === 'activities' && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900">Activities & Extracurricular Involvement</h3>
-                    <p className="text-xs text-slate-500">School clubs, sports teams, and leadership roles</p>
+                    <h3 className="text-xl font-extrabold tracking-[-0.04em] text-school-ink">Activities & Extracurricular Involvement</h3>
+                    <p className="text-xs text-school-muted">School clubs, sports teams, and leadership roles</p>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">
                     {mockActivities.map((act) => (
                       <div
                         key={act.id}
-                        className="p-5 bg-white rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all flex flex-col justify-between"
+                        className="p-5 bg-white border border-school-line hover:border-school-blue hover:shadow-md transition-all flex flex-col justify-between"
                       >
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-md">
+                            <span className="text-[10px] uppercase font-extrabold tracking-[0.14em] px-2.5 py-1 bg-school-blue-soft text-school-blue border border-school-blue/25">
                               {act.category}
                             </span>
-                            <span className="text-xs text-slate-500 flex items-center space-x-1">
+                            <span className="text-xs text-school-muted flex items-center space-x-1">
                               <Calendar size={13} className="text-slate-400" />
                               <span>{act.schedule}</span>
                             </span>
                           </div>
 
-                          <h4 className="text-base font-semibold text-slate-900 mt-1">{act.name}</h4>
-                          <p className="text-xs text-blue-700 font-medium mt-1">Role: {act.role}</p>
+                          <h4 className="text-base font-semibold text-school-ink mt-1">{act.name}</h4>
+                          <p className="text-xs text-school-blue font-medium mt-1">Role: {act.role}</p>
                         </div>
 
-                        <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 flex items-center justify-between">
+                        <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-school-muted flex items-center justify-between">
                           <span>Faculty Supervisor: {act.supervisor}</span>
                           <span className="text-emerald-600 font-medium text-[11px]">Active</span>
                         </div>
@@ -376,45 +373,45 @@ const ParentDashboard = () => {
               {activeTab === 'discipline' && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900">Daily Discipline & Behavior Timeline</h3>
-                    <p className="text-xs text-slate-500">
+                    <h3 className="text-xl font-extrabold tracking-[-0.04em] text-school-ink">Daily Discipline & Behavior Timeline</h3>
+                    <p className="text-xs text-school-muted">
                       Published daily reviews and behavior logs (Only admin-approved published logs are visible here)
                     </p>
                   </div>
 
                   {!childDetails?.discipline_reviews || childDetails.discipline_reviews.length === 0 ? (
-                    <div className="py-12 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="py-12 text-center text-school-muted bg-school-soft border border-school-line">
                       No published discipline or behavior logs for this student.
                     </div>
                   ) : (
-                    <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                    <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-school-line">
                       {childDetails.discipline_reviews.map((log) => {
                         const badge = getCategoryBadgeStyle(log.category);
                         return (
                           <div key={log.id} className="relative group">
                             {/* Timeline Node Icon */}
-                            <div className="absolute -left-6 top-1 w-4 h-4 rounded-full bg-white border-2 border-blue-600 group-hover:scale-110 transition-transform"></div>
+                            <div className="absolute -left-6 top-1 w-4 h-4 rounded-full bg-white border-2 border-school-blue group-hover:scale-110 transition-transform"></div>
 
                             {/* Log Item Card */}
-                            <div className="p-5 bg-white rounded-xl border border-slate-200 space-y-3 shadow-sm">
+                            <div className="p-5 bg-white border border-school-line space-y-3 shadow-sm">
                               <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex items-center space-x-2">
-                                  <span className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs font-semibold border ${badge.bg}`}>
+                                  <span className={`inline-flex items-center space-x-1.5 px-3 py-1 text-xs font-semibold border ${badge.bg}`}>
                                     {badge.icon}
                                     <span>{log.category} ({badge.type})</span>
                                   </span>
                                 </div>
-                                <span className="text-xs text-slate-500 flex items-center space-x-1">
+                                <span className="text-xs text-school-muted flex items-center space-x-1">
                                   <Calendar size={13} className="text-slate-400" />
                                   <span>{log.incident_date}</span>
                                 </span>
                               </div>
 
-                              <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-200">
+                              <p className="text-sm text-slate-700 leading-relaxed bg-school-soft p-3 border border-school-line">
                                 "{log.description}"
                               </p>
 
-                              <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+                              <div className="flex items-center justify-between text-xs text-school-muted pt-1">
                                 <span>Logged by: {log.logged_by_teacher}</span>
                                 <span className="text-emerald-600 font-medium text-[11px] flex items-center space-x-1">
                                   <CheckCircle2 size={12} />
@@ -432,9 +429,7 @@ const ParentDashboard = () => {
             </>
           )}
         </div>
-
-      </div>
-    </div>
+    </PortalLayout>
   );
 };
 
