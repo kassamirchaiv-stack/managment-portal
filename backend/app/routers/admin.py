@@ -17,6 +17,8 @@ try:
         StudentProfile,
         DisciplineReview,
         DisciplineStatus,
+        ReportCard,
+        ReportCardStatus,
     )
     from backend.app.auth_utils import get_current_user, require_roles
 except ImportError:
@@ -27,6 +29,8 @@ except ImportError:
         StudentProfile,
         DisciplineReview,
         DisciplineStatus,
+        ReportCard,
+        ReportCardStatus,
     )
     from app.auth_utils import get_current_user, require_roles
 
@@ -90,7 +94,6 @@ def approve_discipline_review(
             detail=f"Discipline review with ID {id} not found.",
         )
 
-    # Step 2: Check if already approved
     if review.status == DisciplineStatus.APPROVED_PUBLISHED:
         return {
             "message": "Discipline review is already published.",
@@ -98,7 +101,12 @@ def approve_discipline_review(
             "status": review.status.value,
         }
 
-    # Step 3: Update status to APPROVED_PUBLISHED
+    if review.status != DisciplineStatus.PENDING_ADMIN_REVIEW:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Only discipline reviews pending admin review can be published.",
+        )
+
     review.status = DisciplineStatus.APPROVED_PUBLISHED
 
     # Step 4: Commit changes to database
@@ -115,6 +123,80 @@ def approve_discipline_review(
             "status": review.status.value,
         },
     }
+
+
+@router.get("/report-card-queue")
+def get_report_card_queue(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.ADMIN_PRINCIPAL])),
+):
+    pending_cards = (
+        db.query(ReportCard)
+        .filter(ReportCard.status == ReportCardStatus.TEACHER_SUBMITTED)
+        .all()
+    )
+    return [
+        {
+            "id": card.id,
+            "student_id": card.student_id,
+            "student_name": card.student.user.full_name if card.student and card.student.user else "Unknown Student",
+            "grade_level": card.student.grade_level if card.student else "",
+            "term": card.term,
+            "subject": card.subject,
+            "grade": card.grade,
+            "teacher_comments": card.teacher_comments,
+        }
+        for card in pending_cards
+    ]
+
+
+@router.patch("/report-card/{report_card_id}/approve")
+def approve_report_card(
+    report_card_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.ADMIN_PRINCIPAL])),
+):
+    report_card = db.query(ReportCard).filter(ReportCard.id == report_card_id).first()
+    if not report_card:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Report card with ID {report_card_id} not found.",
+        )
+    if report_card.status == ReportCardStatus.ADMIN_APPROVED:
+        return {"id": report_card.id, "status": report_card.status.value}
+    if report_card.status != ReportCardStatus.TEACHER_SUBMITTED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Only teacher-submitted report cards can be approved.",
+        )
+
+    report_card.status = ReportCardStatus.ADMIN_APPROVED
+    db.commit()
+    db.refresh(report_card)
+    return {"id": report_card.id, "status": report_card.status.value}
+
+
+@router.patch("/report-card/{report_card_id}/reject")
+def reject_report_card(
+    report_card_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.ADMIN_PRINCIPAL])),
+):
+    report_card = db.query(ReportCard).filter(ReportCard.id == report_card_id).first()
+    if not report_card:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Report card with ID {report_card_id} not found.",
+        )
+    if report_card.status != ReportCardStatus.TEACHER_SUBMITTED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Only teacher-submitted report cards can be returned for revision.",
+        )
+
+    report_card.status = ReportCardStatus.DRAFT
+    db.commit()
+    return {"id": report_card.id, "status": report_card.status.value}
 
 
 # 3. GET /api/admin/bio-change-requests - List all students with a pending profile edit request

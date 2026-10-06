@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-
-import { useAuth } from '../context/AuthContext';
-import { LogIn, Eye, EyeOff } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, Menu, X } from 'lucide-react';
+import { useAuth } from '../context/auth-context';
 import schoolLogo from '../assets/Alene.jpg';
+import './Login.css';
+
+// The public Alene High School website, linked from the portal so visitors can
+// get back to it.
+const SCHOOL_SITE_URL =
+  import.meta.env.VITE_SCHOOL_SITE_URL || 'https://alene-highschool-website.vercel.app';
 
 const ROLE_OPTIONS = [
   { value: 'STUDENT', label: 'Student' },
@@ -13,14 +17,8 @@ const ROLE_OPTIONS = [
   { value: 'ADMIN_PRINCIPAL', label: 'Principal' },
 ];
 
-/**
- * Login Page Component:
- * Renders the Alene High School (MUSSC) Portal sign-in form.
- * The user picks which role they're signing in as; after a successful login,
- * the returned account role is checked against that selection so nobody can
- * accidentally land on the wrong dashboard.
- */
 const Login = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState('STUDENT');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -28,45 +26,25 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login, logout } = useAuth();
+  const { login, logout, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  /**
-   * Role Redirect Handler:
-   * Maps backend user role to target frontend route.
-   */
   const redirectByRole = (userRole) => {
-    switch (userRole) {
-      case 'ADMIN_PRINCIPAL':
-        navigate('/admin');
-        break;
-      case 'TEACHER':
-        navigate('/teacher');
-        break;
-      case 'PARENT':
-        navigate('/parent');
-        break;
-      case 'STUDENT':
-        navigate('/student');
-        break;
-      default:
-        navigate('/');
-        break;
-    }
+    const routes = {
+      ADMIN_PRINCIPAL: '/admin',
+      TEACHER: '/teacher',
+      PARENT: '/parent',
+      STUDENT: '/student',
+    };
+    navigate(routes[userRole] || '/');
   };
 
-  /**
-   * Form Submit Handler:
-   * Calls login() from AuthContext. Upon success, verifies the account's actual
-   * role matches the "Who is logging in?" selection before redirecting.
-   */
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError('');
     setIsSubmitting(true);
 
     const result = await login(identifier, password);
-
     if (!result.success) {
       setError(result.message);
       setIsSubmitting(false);
@@ -74,10 +52,9 @@ const Login = () => {
     }
 
     if (result.role !== selectedRole) {
-      // Credentials were valid, but for a different role than selected - undo the login.
-      logout();
+      await logout();
       setError(
-        `This account is not registered as a ${ROLE_OPTIONS.find((r) => r.value === selectedRole)?.label}. Please check your selection.`
+        `This account is not registered as a ${ROLE_OPTIONS.find((role) => role.value === selectedRole)?.label}. Please check your selection.`
       );
       setIsSubmitting(false);
       return;
@@ -87,10 +64,6 @@ const Login = () => {
     setIsSubmitting(false);
   };
 
-  /**
-   * Quick Fill Demo Helper:
-   * Allows 1-click selection of pre-configured demo users for quick testing.
-   */
   const setDemoCredentials = (demoUsername, role) => {
     setIdentifier(demoUsername);
     setPassword('password123');
@@ -103,153 +76,247 @@ const Login = () => {
     selectedRole === 'STUDENT' ? 'Enter your student ID' : 'Enter your username';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-slate-900/90 backdrop-blur-md rounded-2xl p-8 border border-slate-800 shadow-2xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <img
-            src={schoolLogo}
-            alt="Alene High School seal"
-            className="w-24 h-24 mx-auto mb-4 rounded-full object-cover border-2 border-slate-700 ring-4 ring-indigo-500/20"
-          />
-          <h1 className="text-2xl font-bold text-white tracking-tight leading-snug">
-            Alene High School (MUSSC) Portal
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">Sign in to your account</p>
+    <div className="school-home">
+      <header className="school-site-header">
+        <a className="school-site-brand" href="#home" aria-label="Alene High School home">
+          <img src={schoolLogo} alt="" />
+          <span>Alene High School</span>
+        </a>
+        <button
+          className="school-menu-toggle"
+          type="button"
+          aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={isMenuOpen}
+          onClick={() => setIsMenuOpen((open) => !open)}
+        >
+          {isMenuOpen ? <X size={23} /> : <Menu size={23} />}
+        </button>
+        <nav className={`school-site-nav${isMenuOpen ? ' is-open' : ''}`} aria-label="Main navigation">
+          <a href="#stem" onClick={() => setIsMenuOpen(false)}>STEM at Alene</a>
+          <a href="#community" onClick={() => setIsMenuOpen(false)}>Community</a>
+          <a href="#achievements" onClick={() => setIsMenuOpen(false)}>Achievements</a>
+          <a className="school-nav-login" href="#portal-login" onClick={() => setIsMenuOpen(false)}>
+            Portal sign in <ArrowRight size={15} />
+          </a>
+        </nav>
+      </header>
+
+      <main id="home">
+        <section className="school-hero" aria-labelledby="home-title">
+          <div className="school-hero__copy">
+            <div className="school-eyebrow">
+              <span className="school-hero__number">01</span>
+              <span className="school-eyebrow__rule" />
+              <span>Alene High School</span>
+            </div>
+            <h1 id="home-title">Excellence<br />in science</h1>
+            <p className="school-hero__tagline">Through collective effort.</p>
+            <p className="school-hero__description">
+              A place to ask bigger questions, learn by doing, and grow together.
+              Welcome to the Alene High School community.
+            </p>
+            <div className="school-hero__actions">
+              <a className="school-button school-button--blue" href="#stem">
+                Discover Alene <ArrowRight size={16} />
+              </a>
+              <a className="school-text-link" href="#portal-login">
+                Go to the school portal <ArrowDown size={14} />
+              </a>
+            </div>
+          </div>
+          <span className="school-hero__side-note" aria-hidden="true">Learn · Explore · Together</span>
+          <span className="school-hero__established">Learning · Growing · Together</span>
+        </section>
+
+        <section className="school-stem" id="stem" aria-labelledby="stem-title">
+          <div className="school-stem__heading">
+            <div className="school-eyebrow school-eyebrow--blue">
+              <span>02</span><span className="school-eyebrow__rule" /><span>Curiosity in action</span>
+            </div>
+            <h2 id="stem-title">STEM at<br /><span>Alene.</span></h2>
+            <p>Ideas become discoveries when students have the space, tools, and support to explore.</p>
+          </div>
+          <figure className="school-stem__photo">
+            <img
+              src="https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1500&q=85"
+              alt="Science laboratory glassware arranged for a practical experiment"
+              loading="lazy"
+            />
+            <figcaption>Learning through experimentation</figcaption>
+          </figure>
+        </section>
+
+        <section className="school-blue-band" aria-label="Our approach">
+          <div className="school-blue-band__inner">
+            <div>
+              <p>Good questions lead somewhere.</p>
+              <h2>Here, curiosity has room to grow.</h2>
+            </div>
+            <a href="#community" aria-label="Explore the Alene community">
+              <ArrowRight size={21} />
+            </a>
+          </div>
+        </section>
+
+        <section className="school-community" id="community" aria-labelledby="community-title">
+          <div className="school-community__mark" aria-hidden="true">03</div>
+          <div className="school-community__copy">
+            <div className="school-eyebrow">
+              <span className="school-eyebrow__rule" /><span>Better, together</span>
+            </div>
+            <h2 id="community-title">A community<br />that shows up.</h2>
+            <p>Students, families, and educators each bring something essential to the work of learning.</p>
+            <a className="school-text-link" href="#portal-login">
+              Meet your school community <ArrowRight size={15} />
+            </a>
+          </div>
+          <div className="school-community__accent" aria-hidden="true" />
+        </section>
+
+        <section className="school-achievements" id="achievements" aria-labelledby="achievements-title">
+          <div className="school-achievements__heading">
+            <div className="school-eyebrow">
+              <span>04</span><span className="school-eyebrow__rule" /><span>What we value</span>
+            </div>
+            <h2 id="achievements-title">Room to do<br />great things.</h2>
+          </div>
+          <div className="school-achievement-grid">
+            <article>
+              <span>01</span>
+              <h3>Curious minds</h3>
+              <p>Encouraging students to ask, test, and discover.</p>
+            </article>
+            <article>
+              <span>02</span>
+              <h3>Shared effort</h3>
+              <p>Building a stronger school through collaboration.</p>
+            </article>
+            <article>
+              <span>03</span>
+              <h3>Every student</h3>
+              <p>Making space for each learner to find their path.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <section className="school-portal" id="portal-login" aria-labelledby="portal-title">
+        <div className="school-portal__intro">
+          <a className="school-portal__back" href={SCHOOL_SITE_URL}>
+            <ArrowLeft size={16} /> Back to Alene High School
+          </a>
+          <div className="school-eyebrow school-eyebrow--light">
+            <span className="school-eyebrow__rule" />
+            <span>Alene school portal</span>
+          </div>
+          <h1 id="portal-title">Your school,<br /><span>all in one place.</span></h1>
+          <p>
+            Sign in to access the right space for students, families, teachers,
+            and school leaders.
+          </p>
+          <div className="school-portal__seal">
+            <img src={schoolLogo} alt="Alene High School seal" />
+            <span>Learning together<br />at Alene High School</span>
+          </div>
         </div>
 
-        {/* Error Alert */}
-        {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-            {error}
+        <div className="school-login-card">
+          <div className="school-login-card__heading">
+            <span className="school-kicker">Welcome back</span>
+            <h2>Sign in to your account</h2>
+            <p>Choose your role, then enter your sign-in details.</p>
           </div>
-        )}
 
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-semibold text-slate-200 mb-2">
-              {identifierLabel}
-            </label>
+          {error && <div className="school-login-error" role="alert">{error}</div>}
+
+          <form onSubmit={handleSubmit} className="school-login-form">
+            <fieldset className="school-role-fieldset">
+              <legend>Who is logging in?</legend>
+              <div className="school-role-options">
+                {ROLE_OPTIONS.map((role) => (
+                  <label
+                    key={role.value}
+                    className={`school-role-option${selectedRole === role.value ? ' is-selected' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="role"
+                      value={role.value}
+                      checked={selectedRole === role.value}
+                      onChange={() => setSelectedRole(role.value)}
+                    />
+                    <span>{role.label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <label className="school-form-label" htmlFor="portal-identifier">{identifierLabel}</label>
             <input
+              id="portal-identifier"
+              className="school-form-input"
               type="text"
+              autoComplete="username"
               required
               value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
+              onChange={(event) => setIdentifier(event.target.value)}
               placeholder={identifierPlaceholder}
-              className="w-full px-4 py-3 bg-slate-950/60 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-500 transition-all"
             />
-            {selectedRole === 'STUDENT' && (
-              <p className="text-xs text-slate-500 mt-1">(e.g. student1)</p>
-            )}
-          </div>
+            {selectedRole === 'STUDENT' && <span className="school-form-hint">Demo ID: student1</span>}
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-200 mb-2">
-              Password
-            </label>
-            <div className="relative">
+            <label className="school-form-label" htmlFor="portal-password">Password</label>
+            <div className="school-password-wrap">
               <input
+                id="portal-password"
+                className="school-form-input"
                 type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event) => setPassword(event.target.value)}
                 placeholder="Enter your password"
-                className="w-full px-4 py-3 pr-11 bg-slate-950/60 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-500 transition-all"
               />
               <button
                 type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer"
+                className="school-password-toggle"
+                onClick={() => setShowPassword((visible) => !visible)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
-          </div>
 
-          {/* Who is logging in? Role Selector */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-200 mb-2">
-              Who is logging in?
-            </label>
-            <div className="space-y-2">
-              {ROLE_OPTIONS.map((role) => (
-                <label
-                  key={role.value}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
-                    selectedRole === role.value
-                      ? 'bg-indigo-500/10 border-indigo-500 text-white'
-                      : 'bg-slate-950/40 border-slate-700 text-slate-300 hover:border-slate-600'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="role"
-                    value={role.value}
-                    checked={selectedRole === role.value}
-                    onChange={() => setSelectedRole(role.value)}
-                    className="w-4 h-4 accent-indigo-500 cursor-pointer"
-                  />
-                  <span className="text-sm font-medium">{role.label}</span>
-                </label>
-              ))}
+            <button
+              type="submit"
+              className="school-button school-button--blue school-login-submit"
+              disabled={isSubmitting || authLoading}
+            >
+              {authLoading ? 'Checking session…' : isSubmitting ? 'Signing in…' : 'Sign in to portal'}
+              {!authLoading && !isSubmitting && <ArrowRight size={17} />}
+            </button>
+          </form>
+
+          <details className="school-demo-details">
+            <summary>Use a demo account</summary>
+            <p>Demo accounts are for testing only. Password: <strong>password123</strong></p>
+            <div className="school-demo-buttons">
+              <button type="button" onClick={() => setDemoCredentials('student1', 'STUDENT')}>Student</button>
+              <button type="button" onClick={() => setDemoCredentials('parent1', 'PARENT')}>Parent</button>
+              <button type="button" onClick={() => setDemoCredentials('teacher1', 'TEACHER')}>Teacher</button>
+              <button type="button" onClick={() => setDemoCredentials('principal1', 'ADMIN_PRINCIPAL')}>Principal</button>
             </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
-          >
-            {isSubmitting ? (
-              <span>Signing in...</span>
-            ) : (
-              <>
-                <LogIn size={18} />
-                <span>Sign In</span>
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Demo Credentials Helper Box */}
-        <div className="mt-8 pt-6 border-t border-slate-800">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 text-center">
-            Click to fill Demo User Credentials:
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setDemoCredentials('student1', 'STUDENT')}
-              className="px-2 py-2 bg-slate-800/60 hover:bg-slate-800 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors text-center cursor-pointer"
-            >
-              Student 1
-            </button>
-            <button
-              type="button"
-              onClick={() => setDemoCredentials('parent1', 'PARENT')}
-              className="px-2 py-2 bg-slate-800/60 hover:bg-slate-800 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors text-center cursor-pointer"
-            >
-              Parent 1
-            </button>
-            <button
-              type="button"
-              onClick={() => setDemoCredentials('teacher1', 'TEACHER')}
-              className="px-2 py-2 bg-slate-800/60 hover:bg-slate-800 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors text-center cursor-pointer"
-            >
-              Teacher 1
-            </button>
-            <button
-              type="button"
-              onClick={() => setDemoCredentials('principal1', 'ADMIN_PRINCIPAL')}
-              className="px-2 py-2 bg-slate-800/60 hover:bg-slate-800 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors text-center cursor-pointer"
-            >
-              Principal
-            </button>
-          </div>
+          </details>
         </div>
-      </div>
+      </section>
+
+      <footer className="school-site-footer">
+        <a className="school-site-brand" href="#home" aria-label="Back to top">
+          <img src={schoolLogo} alt="" />
+          <span>Alene High School</span>
+        </a>
+        <span>Learning together, every day.</span>
+        <a href="#home">Back to top ↑</a>
+      </footer>
     </div>
   );
 };

@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from typing import Optional, List
 
@@ -20,6 +21,8 @@ try:
         DisciplineStatus,
         ReportCard,
         ReportCardStatus,
+        Course,
+        CourseEnrollment,
         TeacherProfile,
     )
     from backend.app.auth_utils import get_current_user, require_roles
@@ -33,11 +36,32 @@ except ImportError:
         DisciplineStatus,
         ReportCard,
         ReportCardStatus,
+        Course,
+        CourseEnrollment,
         TeacherProfile,
     )
     from app.auth_utils import get_current_user, require_roles
 
 router = APIRouter(prefix="/api/teacher", tags=["Teacher Portal"])
+
+
+def teacher_has_course(
+    db: Session,
+    teacher_id: int,
+    student: StudentProfile,
+    subject: Optional[str] = None,
+) -> bool:
+    query = (
+        db.query(Course.id)
+        .join(CourseEnrollment, CourseEnrollment.course_id == Course.id)
+        .filter(
+            Course.teacher_id == teacher_id,
+            CourseEnrollment.student_id == student.id,
+        )
+    )
+    if subject is not None:
+        query = query.filter(Course.subject.ilike(subject.strip()))
+    return query.first() is not None
 
 
 # Pydantic schema for logging discipline review
@@ -75,8 +99,21 @@ def get_teacher_students(
     List all students enrolled in classes taught by or assigned to the teacher.
     Allows teachers to select students when logging discipline entries or report cards.
     """
-    # Fetch all active student profiles from database
-    students = db.query(StudentProfile).all()
+    students_query = db.query(StudentProfile)
+    if current_user.role == UserRole.TEACHER:
+        students_query = (
+            students_query.join(
+                CourseEnrollment,
+                CourseEnrollment.student_id == StudentProfile.id,
+            )
+            .join(
+                Course,
+                Course.id == CourseEnrollment.course_id,
+            )
+            .filter(Course.teacher_id == current_user.id)
+            .distinct()
+        )
+    students = students_query.all()
 
     formatted_students = []
     for student in students:
@@ -113,6 +150,12 @@ def create_discipline_review(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Student profile with ID {data.student_id} not found.",
+        )
+
+    if not teacher_has_course(db, current_user.id, student):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You may only log incidents for students enrolled in your courses.",
         )
 
     # Step 2: Validate approval workflow status check
@@ -177,6 +220,12 @@ def submit_report_card(
             detail=f"Student profile with ID {data.student_id} not found.",
         )
 
+    if not teacher_has_course(db, current_user.id, student, data.subject):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You may only submit grades for subjects you teach to that student.",
+        )
+
     # Step 2: Basic field validation
     if not data.term.strip() or not data.subject.strip() or not data.grade.strip():
         raise HTTPException(
@@ -214,7 +263,25 @@ def submit_report_card(
             status=ReportCardStatus.TEACHER_SUBMITTED,
         )
         db.add(report_card)
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            report_card = (
+                db.query(ReportCard)
+                .filter(
+                    ReportCard.student_id == data.student_id,
+                    ReportCard.term == data.term.strip(),
+                    ReportCard.subject == data.subject.strip(),
+                )
+                .first()
+            )
+            if report_card is None:
+                raise
+            report_card.grade = data.grade.strip()
+            report_card.teacher_comments = data.teacher_comments
+            report_card.status = ReportCardStatus.TEACHER_SUBMITTED
+            db.commit()
         db.refresh(report_card)
 
     return {

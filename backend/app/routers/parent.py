@@ -17,7 +17,9 @@ try:
         DisciplineReview,
         DisciplineStatus,
         ReportCard,
+        ReportCardStatus,
         Course,
+        CourseEnrollment,
     )
     from backend.app.auth_utils import get_current_user, require_roles
 except ImportError:
@@ -29,7 +31,9 @@ except ImportError:
         DisciplineReview,
         DisciplineStatus,
         ReportCard,
+        ReportCardStatus,
         Course,
+        CourseEnrollment,
     )
     from app.auth_utils import get_current_user, require_roles
 
@@ -135,7 +139,10 @@ def get_child_details(
     # Step 3: Fetch Report Cards for the student
     report_cards = (
         db.query(ReportCard)
-        .filter(ReportCard.student_id == student_id)
+        .filter(
+            ReportCard.student_id == student_id,
+            ReportCard.status == ReportCardStatus.ADMIN_APPROVED,
+        )
         .all()
     )
 
@@ -219,7 +226,8 @@ def get_child_courses(
 
     courses = (
         db.query(Course)
-        .filter(Course.grade_level == student_profile.grade_level)
+        .join(CourseEnrollment, CourseEnrollment.course_id == Course.id)
+        .filter(CourseEnrollment.student_id == student_profile.id)
         .all()
     )
 

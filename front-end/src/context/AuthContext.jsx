@@ -1,108 +1,100 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../api/api';
+import { useEffect, useState } from 'react';
+import api, { setCsrfToken } from '../api/api';
+import { AuthContext } from './auth-context';
 
-// 1. Create the AuthContext to share authentication state across components
-const AuthContext = createContext();
+const readStoredUser = () => {
+  try {
+    localStorage.removeItem('token');
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  } catch (error) {
+    console.error('Failed to restore the saved user profile:', error);
+    localStorage.removeItem('user');
+    return null;
+  }
+};
 
-/**
- * AuthProvider component wraps the application and provides user state,
- * token management, login, and logout helper functions.
- */
 export const AuthProvider = ({ children }) => {
-  // State 1: Store logged-in user details (e.g. { id, username, full_name, role })
-  const [user, setUser] = useState(null);
-
-  // State 2: Store JWT token string
-  const [token, setToken] = useState(null);
-
-  // State 3: Store user role string (ADMIN_PRINCIPAL, TEACHER, PARENT, STUDENT)
-  const [role, setRole] = useState(null);
-
-  // State 4: Track loading state while checking existing localStorage session
+  const [user, setUser] = useState(readStoredUser);
   const [loading, setLoading] = useState(true);
 
-  /**
-   * useEffect Hook: Runs once when the React app loads.
-   * Restores user session, token, and role from browser localStorage if present.
-   */
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+    let cancelled = false;
 
-    if (storedToken && storedUser) {
+    const restoreSession = async () => {
       try {
-        const parsedUser = JSON.parse(storedUser);
-        setToken(storedToken);
-        setUser(parsedUser);
-        setRole(parsedUser.role);
-      } catch (err) {
-        console.error('Failed to parse stored user data:', err);
-        localStorage.removeItem('token');
+        const csrfResponse = await api.get('/api/auth/csrf');
+        setCsrfToken(csrfResponse.data.csrf_token);
+        const response = await api.get('/api/auth/me');
+        if (!cancelled) {
+          setUser({
+            id: response.data.user_id,
+            username: response.data.username,
+            role: response.data.role,
+            full_name: response.data.full_name,
+          });
+        }
+      } catch (error) {
+        if (error.response?.status !== 401) {
+          console.error('Unable to restore the authenticated session:', error);
+        }
         localStorage.removeItem('user');
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    }
+    };
 
-    setLoading(false);
+    restoreSession();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  /**
-   * login Function:
-   * Sends user credentials to backend /token endpoint.
-   * On success:
-   *  1. Receives JWT token, user_id, role, full_name from backend.
-   *  2. Saves token and user metadata in localStorage for persistence across page refreshes.
-   *  3. Updates React state so components re-render with logged-in user context.
-   */
   const login = async (username, password) => {
     try {
       const response = await api.post('/token', { username, password });
-      const data = response.data;
-
+      setCsrfToken(response.data.csrf_token);
       const userObj = {
-        id: data.user_id,
-        role: data.role,
-        full_name: data.full_name,
-        username: username,
+        id: response.data.user_id,
+        role: response.data.role,
+        full_name: response.data.full_name,
+        username,
       };
 
-      // Save to localStorage for session persistence
-      localStorage.setItem('token', data.access_token);
       localStorage.setItem('user', JSON.stringify(userObj));
-
-      // Update React state
-      setToken(data.access_token);
+      localStorage.removeItem('token');
       setUser(userObj);
-      setRole(data.role);
-
-      return { success: true, role: data.role };
+      return { success: true, role: response.data.role };
     } catch (error) {
       console.error('Login error:', error);
-      const message =
-        error.response?.data?.detail || 'Invalid username or password';
-      return { success: false, message };
+      return {
+        success: false,
+        message: error.response?.data?.detail || 'Invalid username or password',
+      };
     }
   };
 
-  /**
-   * logout Function:
-   * Clears stored JWT token from localStorage and resets React state to null.
-   */
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
-    setUser(null);
-    setRole(null);
+  const logout = async () => {
+    try {
+      await api.post('/api/auth/logout');
+    } catch (error) {
+      console.error('Server logout failed:', error);
+    } finally {
+      setCsrfToken(null);
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      setUser(null);
+    }
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        token,
-        role,
+        role: user?.role || null,
         loading,
-        isAuthenticated: !!token,
+        isAuthenticated: !!user,
         login,
         logout,
       }}
@@ -110,16 +102,4 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-};
-
-/**
- * Custom hook for consuming AuthContext in any React functional component.
- * Usage: const { user, role, login, logout } = useAuth();
- */
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

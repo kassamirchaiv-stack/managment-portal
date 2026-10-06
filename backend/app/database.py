@@ -8,11 +8,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 
-# Falls back to a local SQLite file when DATABASE_URL isn't set (local dev).
-# Anchored to this file's directory (not the process cwd) since the app is
-# started with `cd app && uvicorn main:app`, which previously caused a
-# relative "./school_system.db" to resolve to a different, empty database file.
-_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "school_system.db")
+# Use a fresh local database by default; the tracked school_system.db is a
+# legacy demo snapshot with obsolete password hashes and schema.
+_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "school_system_dev.db")
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{os.path.abspath(_DB_PATH)}")
 
 # Render (and some other providers) hand out "postgres://" URLs, but SQLAlchemy

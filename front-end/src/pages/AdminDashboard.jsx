@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import api from '../api/api';
 import Navbar from '../components/Navbar';
 import Avatar from '../components/Avatar';
@@ -33,44 +33,65 @@ const AdminDashboard = () => {
   const [loadingBioRequests, setLoadingBioRequests] = useState(true);
   const [bioActionId, setBioActionId] = useState(null);
 
+  const [reportCards, setReportCards] = useState([]);
+  const [loadingReportCards, setLoadingReportCards] = useState(true);
+  const [reportCardActionId, setReportCardActionId] = useState(null);
+  const [queueLoadError, setQueueLoadError] = useState('');
+
   const [toastMessage, setToastMessage] = useState(null);
 
-  /**
-   * 1. Fetch pending discipline reviews from backend
-   */
-  const fetchQueue = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/api/admin/discipline-queue');
-      setQueue(response.data);
-    } catch (err) {
-      console.error('Error fetching admin queue:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * 2. Fetch pending student profile edit requests (notifications) from backend
-   */
-  const fetchBioRequests = async () => {
-    setLoadingBioRequests(true);
-    try {
-      const response = await api.get('/api/admin/bio-change-requests');
-      setBioRequests(response.data);
-    } catch (err) {
-      console.error('Error fetching bio change requests:', err);
-    } finally {
-      setLoadingBioRequests(false);
-    }
-  };
-
   useEffect(() => {
-    fetchQueue();
-    fetchBioRequests();
+    let active = true;
+    const loadQueues = async () => {
+      const [disciplineResult, bioResult, reportCardResult] = await Promise.allSettled([
+        api.get('/api/admin/discipline-queue'),
+        api.get('/api/admin/bio-change-requests'),
+        api.get('/api/admin/report-card-queue'),
+      ]);
+      if (!active) return;
+      if (disciplineResult.status === 'fulfilled') setQueue(disciplineResult.value.data);
+      else console.error('Error fetching admin discipline queue:', disciplineResult.reason);
+      if (bioResult.status === 'fulfilled') setBioRequests(bioResult.value.data);
+      else console.error('Error fetching bio change requests:', bioResult.reason);
+      if (reportCardResult.status === 'fulfilled') setReportCards(reportCardResult.value.data);
+      else console.error('Error fetching report-card queue:', reportCardResult.reason);
+      if (
+        disciplineResult.status === 'rejected'
+        || bioResult.status === 'rejected'
+        || reportCardResult.status === 'rejected'
+      ) {
+        setQueueLoadError('Some approval queues could not be loaded. Refresh the page to retry.');
+      }
+      setLoading(false);
+      setLoadingBioRequests(false);
+      setLoadingReportCards(false);
+    };
+    loadQueues();
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const notificationCount = queue.length + bioRequests.length;
+  const notificationCount = queue.length + bioRequests.length + reportCards.length;
+
+  const handleReportCardAction = async (reportCardId, action) => {
+    setReportCardActionId(reportCardId);
+    try {
+      await api.patch(`/api/admin/report-card/${reportCardId}/${action}`);
+      setReportCards((previous) => previous.filter((card) => card.id !== reportCardId));
+      setToastMessage(
+        action === 'approve'
+          ? 'Report card approved and published to the student and parent.'
+          : 'Report card returned to the teacher for revision.'
+      );
+      setTimeout(() => setToastMessage(null), 4000);
+    } catch (err) {
+      console.error(`Report-card ${action} failed for #${reportCardId}:`, err);
+      alert(`Failed to ${action} the report card. Please try again.`);
+    } finally {
+      setReportCardActionId(null);
+    }
+  };
 
   /**
    * 3. Approve & Publish handler:
@@ -149,6 +170,12 @@ const AdminDashboard = () => {
           <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium flex items-center space-x-3 shadow-sm animate-fade-in">
             <CheckCircle2 size={20} className="text-emerald-600 flex-shrink-0" />
             <span>{toastMessage}</span>
+          </div>
+        )}
+
+        {queueLoadError && (
+          <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+            {queueLoadError}
           </div>
         )}
 
@@ -232,6 +259,55 @@ const AdminDashboard = () => {
                     >
                       <X size={14} />
                       <span>Reject</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Pending Report Cards</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Review teacher-submitted grades before they appear in student and parent portals
+              </p>
+            </div>
+            <span className="px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold rounded-full">
+              {reportCards.length} Pending
+            </span>
+          </div>
+          {loadingReportCards ? (
+            <p className="py-8 text-center text-sm text-slate-500">Loading report cards...</p>
+          ) : reportCards.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-500">No report cards awaiting review.</p>
+          ) : (
+            <div className="space-y-3">
+              {reportCards.map((card) => (
+                <div key={card.id} className="flex flex-col gap-3 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-semibold text-slate-900">{card.student_name} · {card.grade_level}</p>
+                    <p className="text-sm text-slate-600">{card.term} · {card.subject} · Grade {card.grade}</p>
+                    {card.teacher_comments && (
+                      <p className="mt-1 text-sm text-slate-500">{card.teacher_comments}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleReportCardAction(card.id, 'approve')}
+                      disabled={reportCardActionId === card.id}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleReportCardAction(card.id, 'reject')}
+                      disabled={reportCardActionId === card.id}
+                      className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      Return for revision
                     </button>
                   </div>
                 </div>

@@ -4,7 +4,6 @@ import sys
 # Ensure root directory is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-import hashlib
 from datetime import date, timedelta
 from sqlalchemy.orm import Session
 
@@ -19,8 +18,10 @@ try:
         ReportCard,
         ReportCardStatus,
         Course,
+        CourseEnrollment,
         TeacherProfile,
     )
+    from backend.app.auth_utils import hash_password
 except ImportError:
     from app.database import engine, Base, SessionLocal
     from app.models import (
@@ -32,25 +33,17 @@ except ImportError:
         ReportCard,
         ReportCardStatus,
         Course,
+        CourseEnrollment,
         TeacherProfile,
     )
-
-
-
-
-def hash_password(password: str) -> str:
-    """Hash password using passlib bcrypt if available, else SHA256 fallback."""
-    try:
-        from passlib.context import CryptContext
-        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        return pwd_context.hash(password)
-    except Exception:
-        # Fallback hash for test environment without passlib/bcrypt binaries
-        return hashlib.sha256(password.encode("utf-8")).hexdigest()
+    from app.auth_utils import hash_password
 
 
 def seed_data(db: Session):
     """Seed the database with initial data: 1 Principal, 2 Teachers, 2 Parents, 2 Students, and demo records."""
+    if os.getenv("ENVIRONMENT", "development").lower() == "production":
+        raise RuntimeError("Demo seed data is disabled in production.")
+
     # Reset / ensure tables exist
     Base.metadata.create_all(bind=engine)
 
@@ -212,6 +205,15 @@ def seed_data(db: Session):
     course5 = Course(name="Physics I", subject="Physics", grade_level="11th Grade", teacher_id=teacher2.id)
     course6 = Course(name="Biology II", subject="Biology", grade_level="11th Grade", teacher_id=teacher1.id)
     db.add_all([course1, course2, course3, course4, course5, course6])
+    db.flush()
+
+    # Link each demo student to the courses that were previously shared by grade.
+    for profile in (profile1, profile2):
+        matching_courses = db.query(Course).filter(Course.grade_level == profile.grade_level).all()
+        db.add_all(
+            CourseEnrollment(student_id=profile.id, course_id=course.id)
+            for course in matching_courses
+        )
 
     # 8. Demo Teacher Profile (only teacher1 has filled one out, to demo the empty state for teacher2)
     teacher1_profile = TeacherProfile(

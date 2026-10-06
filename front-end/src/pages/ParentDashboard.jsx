@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import api from '../api/api';
 import CourseLoad from '../components/CourseLoad';
 import Navbar from '../components/Navbar';

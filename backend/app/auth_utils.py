@@ -4,13 +4,17 @@ import sys
 # Ensure root directory is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-import hashlib
-from datetime import datetime, timedelta
+import hmac
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import APIKeyCookie
 from jose import JWTError, jwt
+from passlib.context import CryptContext
+from passlib.exc import InvalidHashError, UnknownHashError
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 try:
     from backend.app.database import get_db
@@ -19,51 +23,78 @@ except ImportError:
     from app.database import get_db
     from app.models import User, UserRole
 
-# Secret key and algorithm for signing JWT tokens
-SECRET_KEY = os.getenv("SECRET_KEY", "school_system_secret_key_change_in_production_12345")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    if ENVIRONMENT == "production":
+        raise RuntimeError("SECRET_KEY must be configured in production.")
+    SECRET_KEY = "development-only-secret-key-do-not-use-in-production"
+if ENVIRONMENT == "production" and len(SECRET_KEY) < 32:
+    raise RuntimeError("SECRET_KEY must contain at least 32 characters in production.")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+ACCESS_COOKIE_NAME = "school_access_token"
+CSRF_COOKIE_NAME = "school_csrf_token"
+CSRF_HEADER_NAME = "X-CSRF-Token"
+PASSWORD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
+limiter = Limiter(
+    key_func=get_remote_address,
+    storage_uri=os.getenv("RATE_LIMIT_STORAGE_URI") or None,
+)
 
-# OAuth2 scheme for retrieving token from Authorization header
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token", auto_error=False)
+session_cookie = APIKeyCookie(name=ACCESS_COOKIE_NAME, auto_error=False)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain text password against the stored password hash."""
     try:
-        from passlib.context import CryptContext
-        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        if pwd_context.verify(plain_password, hashed_password):
-            return True
-    except Exception:
-        pass
-    # Fallback comparison if plain SHA256 was used
-    fallback_hash = hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
-    return fallback_hash == hashed_password
+        return PASSWORD_CONTEXT.verify(plain_password, hashed_password)
+    except (InvalidHashError, UnknownHashError, ValueError):
+        return False
+
+
+def hash_password(password: str) -> str:
+    """Create a bcrypt password hash; hashing errors must not degrade security."""
+    if len(password.encode("utf-8")) > 72:
+        raise ValueError("Passwords must be no longer than 72 UTF-8 bytes.")
+    return PASSWORD_CONTEXT.hash(password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create a signed JWT access token containing user claims."""
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
 def get_current_user(
-    token: Optional[str] = Depends(oauth2_scheme),
+    request: Request,
+    token: Optional[str] = Depends(session_cookie),
     db: Session = Depends(get_db),
 ) -> User:
     """FastAPI dependency to extract and validate the logged-in user from the JWT token."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
     )
+    if token:
+        if request.method not in {"GET", "HEAD", "OPTIONS"}:
+            csrf_cookie = request.cookies.get(CSRF_COOKIE_NAME, "")
+            csrf_header = request.headers.get(CSRF_HEADER_NAME, "")
+            if not csrf_cookie or not hmac.compare_digest(
+                csrf_cookie.encode("utf-8"), csrf_header.encode("utf-8")
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="CSRF validation failed.",
+                )
+
     if not token:
         raise credentials_exception
 

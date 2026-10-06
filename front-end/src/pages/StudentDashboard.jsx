@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import api from '../api/api';
 import CourseLoad from '../components/CourseLoad';
 import Navbar from '../components/Navbar';
@@ -78,24 +78,27 @@ const StudentDashboard = () => {
     return <FileText size={18} className="text-sky-500" />;
   };
 
-  const fetchProfile = async () => {
-    setLoading(true);
-    setLoadError('');
-    try {
-      const response = await api.get('/api/student/me');
-      setProfile(response.data);
-    } catch (err) {
-      console.error('Error fetching student profile:', err);
-      setLoadError(
-        err.response?.data?.detail || 'Failed to load your profile. Please try again later.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchProfile();
+    let active = true;
+    const loadProfile = async () => {
+      try {
+        const response = await api.get('/api/student/me');
+        if (active) setProfile(response.data);
+      } catch (err) {
+        console.error('Error fetching student profile:', err);
+        if (active) {
+          setLoadError(
+            err.response?.data?.detail || 'Failed to load your profile. Please try again later.'
+          );
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    loadProfile();
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (

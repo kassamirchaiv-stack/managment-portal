@@ -18,7 +18,9 @@ try:
         DisciplineReview,
         DisciplineStatus,
         ReportCard,
+        ReportCardStatus,
         Course,
+        CourseEnrollment,
     )
     from backend.app.auth_utils import get_current_user, require_roles
     from backend.app.routers.parent import format_course
@@ -31,7 +33,9 @@ except ImportError:
         DisciplineReview,
         DisciplineStatus,
         ReportCard,
+        ReportCardStatus,
         Course,
+        CourseEnrollment,
     )
     from app.auth_utils import get_current_user, require_roles
     from app.routers.parent import format_course
@@ -71,7 +75,10 @@ def get_my_profile(
     # Step 2: Fetch report cards for this student
     report_cards = (
         db.query(ReportCard)
-        .filter(ReportCard.student_id == student_profile.id)
+        .filter(
+            ReportCard.student_id == student_profile.id,
+            ReportCard.status == ReportCardStatus.ADMIN_APPROVED,
+        )
         .all()
     )
 
@@ -207,7 +214,8 @@ def get_my_courses(
 
     courses = (
         db.query(Course)
-        .filter(Course.grade_level == student_profile.grade_level)
+        .join(CourseEnrollment, CourseEnrollment.course_id == Course.id)
+        .filter(CourseEnrollment.student_id == student_profile.id)
         .all()
     )
 

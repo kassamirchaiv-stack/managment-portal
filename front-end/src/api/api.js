@@ -1,10 +1,15 @@
 import axios from 'axios';
 
-// Dynamically target Vite env variable in production, falling back to localhost for dev
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+let csrfToken = null;
+
+export const setCsrfToken = (token) => {
+  csrfToken = token;
+};
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -12,17 +17,12 @@ const api = axios.create({
 
 /**
  * Request Interceptor:
- * Before every outgoing HTTP request, check if a JWT token exists in localStorage.
- * If found, attach the token to the 'Authorization' header as a Bearer token.
+ * Attach the in-memory CSRF token to protect cookie-authenticated mutations.
  */
 api.interceptors.request.use(
   (config) => {
-    // Retrieve stored JWT token from browser localStorage
-    const token = localStorage.getItem('token');
-
-    if (token) {
-      // Attach header: Authorization: Bearer <token>
-      config.headers.Authorization = `Bearer ${token}`;
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
     }
 
     return config;
@@ -34,17 +34,20 @@ api.interceptors.request.use(
 
 /**
  * Response Interceptor:
- * If an API response returns 401 Unauthorized, automatically clear invalid local token storage.
+ * If the session cookie is rejected, clear saved display data and return to sign-in.
  */
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      console.warn('Unauthorized request! Clearing stored token.');
-      localStorage.removeItem('token');
+      console.warn('Unauthorized request. Clearing saved session data.');
       localStorage.removeItem('user');
+      setCsrfToken(null);
+      const publicAuthRequest = ['/token', '/api/auth/me', '/api/auth/csrf'].includes(
+        error.config?.url
+      );
 
-      if (window.location.pathname !== '/login') {
+      if (!publicAuthRequest && window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
     }

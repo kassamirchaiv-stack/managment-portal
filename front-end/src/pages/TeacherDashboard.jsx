@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import api from '../api/api';
 import Navbar from '../components/Navbar';
 import Avatar from '../components/Avatar';
@@ -36,24 +36,27 @@ const TeacherDashboard = () => {
   const [rosterError, setRosterError] = useState('');
   const [activeTab, setActiveTab] = useState('roster'); // 'roster' | 'discipline' | 'report-card'
 
-  const fetchStudents = async () => {
-    setLoadingStudents(true);
-    setRosterError('');
-    try {
-      const res = await api.get('/api/teacher/my-students');
-      setStudents(res.data);
-    } catch (err) {
-      console.error('Error fetching students:', err);
-      setRosterError(
-        err.response?.data?.detail || 'Failed to load class roster. Please try again later.'
-      );
-    } finally {
-      setLoadingStudents(false);
-    }
-  };
-
   useEffect(() => {
-    fetchStudents();
+    let active = true;
+    const loadStudents = async () => {
+      try {
+        const response = await api.get('/api/teacher/my-students');
+        if (active) setStudents(response.data);
+      } catch (err) {
+        console.error('Error fetching students:', err);
+        if (active) {
+          setRosterError(
+            err.response?.data?.detail || 'Failed to load class roster. Please try again later.'
+          );
+        }
+      } finally {
+        if (active) setLoadingStudents(false);
+      }
+    };
+    loadStudents();
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (

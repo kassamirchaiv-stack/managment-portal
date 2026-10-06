@@ -14,6 +14,7 @@ from sqlalchemy import (
     Date,
     Enum as SQLEnum,
     ForeignKey,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 
@@ -114,6 +115,11 @@ class StudentProfile(Base):
         back_populates="student",
         cascade="all, delete-orphan",
     )
+    course_enrollments = relationship(
+        "CourseEnrollment",
+        back_populates="student",
+        cascade="all, delete-orphan",
+    )
 
 
 class DisciplineReview(Base):
@@ -145,6 +151,14 @@ class DisciplineReview(Base):
 
 class ReportCard(Base):
     __tablename__ = "report_cards"
+    __table_args__ = (
+        UniqueConstraint(
+            "student_id",
+            "term",
+            "subject",
+            name="uq_report_cards_student_term_subject",
+        ),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey("student_profiles.id"), nullable=False)
@@ -180,6 +194,29 @@ class Course(Base):
         foreign_keys=[teacher_id],
         back_populates="courses_taught",
     )
+    student_enrollments = relationship(
+        "CourseEnrollment",
+        back_populates="course",
+        cascade="all, delete-orphan",
+    )
+
+
+class CourseEnrollment(Base):
+    __tablename__ = "course_enrollments"
+    __table_args__ = (
+        UniqueConstraint(
+            "student_id",
+            "course_id",
+            name="uq_course_enrollments_student_course",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("student_profiles.id"), nullable=False)
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
+
+    student = relationship("StudentProfile", back_populates="course_enrollments")
+    course = relationship("Course", back_populates="student_enrollments")
 
 
 class TeacherProfile(Base):
